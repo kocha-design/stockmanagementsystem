@@ -1,0 +1,95 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Orodha ya Bidhaa - Stock Management{% endblock %}
+
+{% block page_title %}Orodha ya Bidhaa{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="/admin/warehouse/product/add/" class="btn btn-sm btn-primary">
+        <i class="fas fa-plus"></i> Ongeza Bidhaa
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">Bidhaa Zote</h6>
+        <div class="d-flex">
+            <input type="text" class="form-control form-control-sm me-2" 
+                   placeholder="Tafuta bidhaa..." id="searchInput">
+            <button class="btn btn-sm btn-outline-primary" onclick="exportTable()">
+                <i class="fas fa-download"></i> Pakua
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-bordered" id="productsTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Jina la Bidhaa</th>
+                        <th>SKU</th>
+                        <th>Kategoria</th>
+                        <th>Bei (TZS)</th>
+                        <th>Stock</th>
+                        <th>Hali</th>
+                        <th>Vitendo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.sku }}</td>
+                        <td>{{ product.category.name|default:"-" }}</td>
+                        <td>{{ product.unit_price|default:0 }}</td>
+                        <td class="stock-level">{{ product.current_stock|default:0 }}</td>
+                        <td>
+                            {% if product.current_stock <= 0 %}
+                            <span class="badge bg-danger">Hakuna Stock</span>
+                            {% elif product.current_stock <= product.reorder_level %}
+                            <span class="badge bg-warning">Stock Ndogo</span>
+                            {% else %}
+                            <span class="badge bg-success">Ipo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="/admin/warehouse/product/{{ product.id }}/change/" 
+                               class="btn btn-sm btn-info" title="Badilisha">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="/admin/warehouse/product/{{ product.id }}/delete/" 
+                               class="btn btn-sm btn-danger btn-delete" title="Futa">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">Hakuna bidhaa zilizosajiliwa</h5>
+            <p class="text-muted">Bofya "Ongeza Bidhaa" ili kuanza</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportTable() {
+    // Simple export functionality
+    alert("Ripoti itapakuliwa...");
+    // In production, implement proper CSV/PDF export
+}
+</script>
+{% endblock %}

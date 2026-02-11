@@ -1,0 +1,102 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Ingiza Stock - Stock Management{% endblock %}
+
+{% block page_title %}Ingiza Stock Mpya{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-arrow-down me-2"></i>Ingiza Stock
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Kuna makosa!</strong> Tafadhali sahihisha makosa hapo chini.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.product.label }}</label>
+                            {{ form.product }}
+                            {% if form.product.errors %}
+                            <div class="text-danger small">{{ form.product.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.quantity.label }}</label>
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}
+                            <div class="text-danger small">{{ form.quantity.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.supplier.label }}</label>
+                            {{ form.supplier }}
+                            {% if form.supplier.errors %}
+                            <div class="text-danger small">{{ form.supplier.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.reference_no.label }}</label>
+                            {{ form.reference_no }}
+                            {% if form.reference_no.errors %}
+                            <div class="text-danger small">{{ form.reference_no.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.warehouse.label }}</label>
+                        {{ form.warehouse }}
+                        {% if form.warehouse.errors %}
+                        <div class="text-danger small">{{ form.warehouse.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.notes.label }}</label>
+                        {{ form.notes }}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-times"></i> Ghairi
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> Hifadhi Maingizo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card shadow mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Maelekezo
+                </h6>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Hakikisha namba ya kumbukumbu ni ya kipekee</li>
+                    <li>Rekodi zote za stock zinahifadhiwa kwa kudumu</li>
+                    <li>Taarifa ya stock itasasishwa moja kwa moja</li>
+                    <li>Kama bidhaa haipo, ongeza kwanza kupitia Admin Panel</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,205 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}{{ product.name }} - Stock Management{% endblock %}
+
+{% block page_title %}{{ product.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="/admin/warehouse/product/{{ product.id }}/change/" 
+       class="btn btn-sm btn-primary">
+        <i class="fas fa-edit"></i> Badilisha
+    </a>
+    <a href="{% url 'product_list' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Rudi
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Product Details -->
+    <div class="col-md-4">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle"></i> Maelezo ya Bidhaa
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <th>Jina:</th>
+                        <td>{{ product.name }}</td>
+                    </tr>
+                    <tr>
+                        <th>SKU:</th>
+                        <td><code>{{ product.sku }}</code></td>
+                    </tr>
+                    <tr>
+                        <th>Kategoria:</th>
+                        <td>{{ product.category.name|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Bei (TZS):</th>
+                        <td>{{ product.unit_price|default:"-" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Stock Iliyopo:</th>
+                        <td>
+                            <span class="badge 
+                                {% if current_stock <= 0 %}bg-danger
+                                {% elif current_stock <= product.reorder_level %}bg-warning
+                                {% else %}bg-success{% endif %}">
+                                {{ current_stock }} vitu
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Kiwango cha Kuagiza:</th>
+                        <td>{{ product.reorder_level }}</td>
+                    </tr>
+                </table>
+                
+                {% if product.description %}
+                <div class="mt-3">
+                    <h6>Maelezo:</h6>
+                    <p class="text-muted">{{ product.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-bolt"></i> Vitendo vya Haraka</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'add_stockin' %}" class="btn btn-success">
+                        <i class="fas fa-arrow-down"></i> Ingiza Stock
+                    </a>
+                    <a href="{% url 'add_stockout' %}" class="btn btn-danger">
+                        <i class="fas fa-arrow-up"></i> Toa Stock
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transaction History -->
+    <div class="col-md-8">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white d-flex justify-content-between">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> Historia ya Manunuzi
+                </h5>
+                <span class="badge bg-light text-dark">
+                    Jumla: {{ stockins|length|add:stockouts|length }}
+                </span>
+            </div>
+            <div class="card-body">
+                <ul class="nav nav-tabs" id="historyTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="stockin-tab" data-bs-toggle="tab" 
+                                data-bs-target="#stockin" type="button">
+                            Maingizo ({{ stockins|length }})
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="stockout-tab" data-bs-toggle="tab" 
+                                data-bs-target="#stockout" type="button">
+                            Matoleo ({{ stockouts|length }})
+                        </button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content mt-3" id="historyTabContent">
+                    <!-- Stock In History -->
+                    <div class="tab-pane fade show active" id="stockin">
+                        {% if stockins %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tarehe</th>
+                                        <th>Idadi</th>
+                                        <th>Mtoaji</th>
+                                        <th>Namba ya Kumbukumbu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stockin in stockins %}
+                                    <tr>
+                                        <td>{{ stockin.date_received|date:"d/m/Y H:i" }}</td>
+                                        <td class="text-success">+{{ stockin.quantity }}</td>
+                                        <td>{{ stockin.supplier|default:"-" }}</td>
+                                        <td><code>{{ stockin.reference_no }}</code></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Hakuna historia ya maingizo ya stock</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Stock Out History -->
+                    <div class="tab-pane fade" id="stockout">
+                        {% if stockouts %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tarehe</th>
+                                        <th>Idadi</th>
+                                        <th>Mnunuzi</th>
+                                        <th>Namba ya Kumbukumbu</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for stockout in stockouts %}
+                                    <tr>
+                                        <td>{{ stockout.date_issued|date:"d/m/Y H:i" }}</td>
+                                        <td class="text-danger">-{{ stockout.quantity }}</td>
+                                        <td>{{ stockout.customer|default:"-" }}</td>
+                                        <td><code>{{ stockout.reference_no }}</code></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-outbox fa-2x text-muted mb-3"></i>
+                            <p class="text-muted">Hakuna historia ya matoleo ya stock</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stock Chart (Placeholder) -->
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line"></i> Mienendo ya Stock
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">Grafu ya mienendo ya stock itaonekana hapa</p>
+                    <small class="text-muted">Inahitaji data zaidi ya siku 30</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

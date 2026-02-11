@@ -1,0 +1,238 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Dashboard - Stock Management System{% endblock %}
+
+{% block page_title %}Dashboard ya Stock{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Stats Cards -->
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Bidhaa Zote
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ total_products }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-box fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Kategoria
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ total_categories }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-tags fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Bidhaa Zenye Stock Ndogo
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            {{ low_stock_products|length }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Maingizo ya Leo
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            0
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Recent Activity and Low Stock -->
+<div class="row">
+    <!-- Low Stock Products -->
+    <div class="col-xl-6 col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Bidhaa Zenye Stock Ndogo
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if low_stock_products %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Bidhaa</th>
+                                <th>SKU</th>
+                                <th>Stock</th>
+                                <th>Kiwango cha Kuagiza</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in low_stock_products %}
+                            <tr>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.sku }}</td>
+                                <td>
+                                    <span class="badge bg-warning text-dark">
+                                        {{ product.current_stock }}
+                                    </span>
+                                </td>
+                                <td>{{ product.reorder_level }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <p class="text-muted">Hakuna bidhaa zenye stock ndogo kwa sasa.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="col-xl-6 col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>Shughuli za Hivi Karibuni
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h6 class="small font-weight-bold text-success">
+                            <i class="fas fa-arrow-down me-1"></i> Maingizo Mapya
+                        </h6>
+                        {% if recent_stockins %}
+                        <div class="list-group small">
+                            {% for stockin in recent_stockins %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <strong>{{ stockin.product.name|truncatechars:20 }}</strong>
+                                    <small class="text-success">{{ stockin.quantity }} vitu</small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ stockin.date_received|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">Hakuna maingizo ya hivi karibuni</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6 class="small font-weight-bold text-danger">
+                            <i class="fas fa-arrow-up me-1"></i> Matoleo Mapya
+                        </h6>
+                        {% if recent_stockouts %}
+                        <div class="list-group small">
+                            {% for stockout in recent_stockouts %}
+                            <div class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <strong>{{ stockout.product.name|truncatechars:20 }}</strong>
+                                    <small class="text-danger">{{ stockout.quantity }} vitu</small>
+                                </div>
+                                <small class="text-muted">
+                                    {{ stockout.date_issued|date:"d/m/Y H:i" }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">Hakuna matoleo ya hivi karibuni</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-bolt me-2"></i>Vitendo vya Haraka
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'add_stockin' %}" class="btn btn-success btn-lg w-100 py-3">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            Ingiza Stock
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'add_stockout' %}" class="btn btn-danger btn-lg w-100 py-3">
+                            <i class="fas fa-minus-circle fa-2x mb-2"></i><br>
+                            Toa Stock
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'product_list' %}" class="btn btn-info btn-lg w-100 py-3">
+                            <i class="fas fa-box fa-2x mb-2"></i><br>
+                            Orodha ya Bidhaa
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="/admin/warehouse/product/add/" class="btn btn-primary btn-lg w-100 py-3">
+                            <i class="fas fa-plus fa-2x mb-2"></i><br>
+                    Ongeza Bidhaa Mpya
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
