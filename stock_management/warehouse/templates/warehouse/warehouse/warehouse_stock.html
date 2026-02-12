@@ -1,0 +1,122 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}{{ warehouse.name }} - Stock Management{% endblock %}
+
+{% block page_title %}{{ warehouse.name }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group">
+    <a href="{% url 'add_stockin' %}?warehouse={{ warehouse.id }}" class="btn btn-sm btn-success">
+        <i class="fas fa-plus"></i> Ingiza Stock
+    </a>
+    <a href="{% url 'add_stockout' %}?warehouse={{ warehouse.id }}" class="btn btn-sm btn-danger">
+        <i class="fas fa-minus"></i> Toa Stock
+    </a>
+    <a href="{% url 'transfer_stock' %}?from={{ warehouse.id }}" class="btn btn-sm btn-info">
+        <i class="fas fa-exchange-alt"></i> Hamisha Stock
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body">
+                <h6><i class="fas fa-warehouse"></i> Jina la Ghala</h6>
+                <h4>{{ warehouse.name }}</h4>
+                <small>{{ warehouse.code }}</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body">
+                <h6><i class="fas fa-map-marker-alt"></i> Eneo</h6>
+                <h5>{{ warehouse.location|default:"Haijawekwa" }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body">
+                <h6><i class="fas fa-boxes"></i> Jumla ya Vitu</h6>
+                <h3>{{ total_items }}</h3>
+                <small>Bidhaa: {{ total_products }}</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white d-flex justify-content-between">
+        <h5 class="mb-0"><i class="fas fa-box"></i> Stock kwenye {{ warehouse.name }}</h5>
+        <span class="badge bg-light text-dark">{{ products|length }} bidhaa</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>#</th>
+                        <th>Bidhaa</th>
+                        <th>SKU</th>
+                        <th>Kategoria</th>
+                        <th>Bei (TZS)</th>
+                        <th>Stock</th>
+                        <th>Reorder Level</th>
+                        <th>Hali</th>
+                        <th>Vitendo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in products %}
+                    <tr class="{% if item.stock <= 0 %}table-danger{% elif item.stock <= item.product.reorder_level %}table-warning{% endif %}">
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <a href="{% url 'product_detail' item.product.id %}">
+                                {{ item.product.name }}
+                            </a>
+                        </td>
+                        <td><code>{{ item.product.sku }}</code></td>
+                        <td>{{ item.product.category.name|default:"-" }}</td>
+                        <td class="text-end">{{ item.product.unit_price|floatformat:0 }}</td>
+                        <td class="text-center fw-bold">{{ item.stock }}</td>
+                        <td class="text-center">{{ item.product.reorder_level }}</td>
+                        <td>
+                            {% if item.stock <= 0 %}
+                            <span class="badge bg-danger">Hakuna Stock</span>
+                            {% elif item.stock <= item.product.reorder_level %}
+                            <span class="badge bg-warning">Stock Ndogo</span>
+                            {% else %}
+                            <span class="badge bg-success">Ipo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'add_stockout' %}?product={{ item.product.id }}&warehouse={{ warehouse.id }}" 
+                               class="btn btn-sm btn-danger" title="Toa Stock">
+                                <i class="fas fa-arrow-up"></i>
+                            </a>
+                            <a href="{% url 'transfer_stock' %}?from={{ warehouse.id }}&product={{ item.product.id }}" 
+                               class="btn btn-sm btn-info" title="Hamisha">
+                                <i class="fas fa-exchange-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <i class="fas fa-box-open fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Hakuna bidhaa kwenye ghala hili</h5>
+                            <a href="{% url 'add_stockin' %}?warehouse={{ warehouse.id }}" class="btn btn-success mt-3">
+                                <i class="fas fa-plus"></i> Ingiza Stock
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

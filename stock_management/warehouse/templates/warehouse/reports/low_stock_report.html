@@ -1,0 +1,442 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Ripoti ya Stock Ndogo - Stock Management System{% endblock %}
+
+{% block page_title %}Ripoti ya Stock Ndogo{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group no-print">
+    <button class="btn btn-sm btn-warning" onclick="printReport()">
+        <i class="fas fa-print"></i> Print
+    </button>
+    <button class="btn btn-sm btn-success" onclick="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Excel
+    </button>
+    <button class="btn btn-sm btn-danger" onclick="exportToPDF()">
+        <i class="fas fa-file-pdf"></i> PDF
+    </button>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Rudi
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- HEADER YA RIPOTI -->
+    <div class="card shadow mb-4">
+        <div class="card-header bg-warning text-dark py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    RIPOTI YA BIDHAA ZENYE STOCK NDOGO
+                </h5>
+                <span class="badge bg-dark text-white p-2">
+                    <i class="fas fa-calendar me-1"></i> {{ report_date|date:"d/m/Y H:i" }}
+                </span>
+            </div>
+        </div>
+        <div class="card-body">
+            
+            <!-- SUMMARY CARDS -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-warning text-dark shadow h-100">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <h6 class="fw-bold">Jumla ya Stock Ndogo</h6>
+                                    <h2 class="mb-0">{{ total_low_stock }}</h2>
+                                    <small>bidhaa zenye tahadhari</small>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <i class="fas fa-exclamation-triangle fa-3x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card bg-danger text-white shadow h-100">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <h6 class="fw-bold">Hakuna Stock Kabisa</h6>
+                                    <h2 class="mb-0">
+                                        {% with out_of_stock=0 %}
+                                            {% for p in products %}
+                                                {% if p.current_stock <= 0 %}
+                                                    {% cycle out_of_stock as out_of_stock silent %}
+                                                {% endif %}
+                                            {% endfor %}
+                                            {{ out_of_stock }}
+                                        {% endwith %}
+                                    </h2>
+                                    <small>bidhaa zimeisha</small>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <i class="fas fa-times-circle fa-3x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="card bg-info text-white shadow h-100">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-8">
+                                    <h6 class="fw-bold">Tarehe ya Ripoti</h6>
+                                    <h5 class="mb-0">{{ report_date|date:"d/m/Y" }}</h5>
+                                    <small>{{ report_date|date:"H:i:s" }}</small>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <i class="fas fa-clock fa-3x opacity-50"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FILTER SECTION -->
+            <div class="row mb-4" id="filterSection">
+                <div class="col-md-12">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label"><i class="fas fa-search"></i> Tafuta Bidhaa</label>
+                                    <input type="text" id="searchInput" class="form-control" placeholder="Andika jina la bidhaa...">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label"><i class="fas fa-filter"></i> Kategoria</label>
+                                    <select id="categoryFilter" class="form-select">
+                                        <option value="">Zote</option>
+                                        {% for product in products %}
+                                            {% if product.category %}
+                                                <option value="{{ product.category }}">{{ product.category }}</option>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label"><i class="fas fa-tag"></i> Hali</label>
+                                    <select id="stockFilter" class="form-select">
+                                        <option value="">Zote</option>
+                                        <option value="low">Stock Ndogo</option>
+                                        <option value="out">Hakuna Stock</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button class="btn btn-secondary w-100" onclick="resetFilters()">
+                                        <i class="fas fa-undo"></i> Weka Upya
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LOW STOCK TABLE -->
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover" id="stockTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>#</th>
+                            <th>Bidhaa</th>
+                            <th>SKU</th>
+                            <th>Kategoria</th>
+                            <th>Stock Iliyopo</th>
+                            <th>Reorder Level</th>
+                            <th>Inahitajika</th>
+                            <th>Bei (TZS)</th>
+                            <th>Thamani ya Stock (TZS)</th>
+                            <th>Hali</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr class="{% if product.current_stock <= 0 %}table-danger{% else %}table-warning{% endif %}">
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <strong>{{ product.name }}</strong>
+                                <br>
+                                <small class="text-muted">ID: {{ product.id }}</small>
+                            </td>
+                            <td><code>{{ product.sku }}</code></td>
+                            <td>{{ product.category|default:"-" }}</td>
+                            <td class="text-center fw-bold 
+                                {% if product.current_stock <= 0 %}text-danger
+                                {% else %}text-warning{% endif %}">
+                                {{ product.current_stock }}
+                            </td>
+                            <td class="text-center">{{ product.reorder_level }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-danger">
+                                    {{ product.needed_quantity }}
+                                </span>
+                            </td>
+                            <td class="text-end">{{ product.unit_price|floatformat:0 }}</td>
+                            <td class="text-end">{{ product.total_value|floatformat:0 }}</td>
+                            <td>
+                                {% if product.current_stock <= 0 %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle"></i> Hakuna Stock
+                                </span>
+                                {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> Stock Ndogo
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-5">
+                                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                                <h4 class="text-success">Hakuna Bidhaa Zenye Stock Ndogo!</h4>
+                                <p class="text-muted">Bidhaa zote zina stock ya kutosha kwa sasa.</p>
+                                <a href="{% url 'dashboard' %}" class="btn btn-primary mt-3">
+                                    <i class="fas fa-arrow-left"></i> Rudi Dashboard
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ORDER RECOMMENDATIONS - HAKUNA MULTIPLY! -->
+            {% if products %}
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="alert alert-info">
+                        <h6 class="alert-heading">
+                            <i class="fas fa-lightbulb me-2"></i> Mapendekezo ya Kuagiza
+                        </h6>
+                        <p class="mb-2">Bidhaa zifuatazo zinahitaji kuagizwa haraka:</p>
+                        <ol class="mb-0">
+                            {% for product in products|slice:":5" %}
+                            <li>
+                                <strong>{{ product.name }}</strong> 
+                                ({{ product.sku }}) - 
+                                Agiza <span class="badge bg-danger">{{ product.needed_quantity }}</span> vitu
+                                {% if product.current_stock <= 0 %}
+                                <span class="badge bg-dark">HARAKA! Imeisha</span>
+                                {% endif %}
+                                <br>
+                                <small class="text-muted">
+                                    Stock sasa: {{ product.current_stock }} | 
+                                    Reorder level: {{ product.reorder_level }} | 
+                                    Bei: TZS {{ product.unit_price|floatformat:0 }} kwa kila kitu
+                                </small>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="card bg-light h-100">
+                        <div class="card-body d-flex flex-column justify-content-center">
+                            <i class="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+                            <h6>Tengeneza Orodha ya Kuagiza</h6>
+                            <p class="small text-muted">Pakua orodha ya bidhaa za kuagiza</p>
+                            <button class="btn btn-warning mt-2" onclick="generateOrderList()">
+                                <i class="fas fa-download"></i> Pakua Orodha
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- RIPOTI FOOTER -->
+            <div class="row mt-4">
+                <div class="col-md-8">
+                    <div class="alert alert-secondary mb-0">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Ripoti hii inaonyesha bidhaa zote zenye stock ≤ reorder level.
+                            Inashauriwa kuagiza bidhaa mara tu stock inapofikia reorder level.
+                        </small>
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <p class="text-muted mb-0 small">
+                        <i class="fas fa-print"></i> Imetolewa na: {{ request.user.username|default:"System" }}<br>
+                        <i class="fas fa-clock"></i> {{ report_date|date:"d/m/Y H:i:s" }}
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ========== FILTER FUNCTIONS ==========
+function filterTable() {
+    const searchInput = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const categoryFilter = document.getElementById('categoryFilter')?.value || '';
+    const stockFilter = document.getElementById('stockFilter')?.value || '';
+    const table = document.getElementById('stockTable');
+    
+    if (!table) return;
+    
+    const rows = table.querySelectorAll('tbody tr');
+    let visibleCount = 0;
+    
+    rows.forEach(row => {
+        let showRow = true;
+        
+        if (searchInput) {
+            const text = row.textContent.toLowerCase();
+            showRow = text.includes(searchInput);
+        }
+        
+        if (showRow && categoryFilter) {
+            const category = row.querySelector('td:nth-child(4)')?.textContent.trim() || '';
+            showRow = category === categoryFilter;
+        }
+        
+        if (showRow && stockFilter) {
+            const badgeText = row.querySelector('td:nth-child(10) .badge')?.textContent.toLowerCase() || '';
+            if (stockFilter === 'low') {
+                showRow = badgeText.includes('stock ndogo');
+            } else if (stockFilter === 'out') {
+                showRow = badgeText.includes('hakuna stock');
+            }
+        }
+        
+        row.style.display = showRow ? '' : 'none';
+        if (showRow) visibleCount++;
+    });
+}
+
+function resetFilters() {
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const stockFilter = document.getElementById('stockFilter');
+    
+    if (searchInput) searchInput.value = '';
+    if (categoryFilter) categoryFilter.value = '';
+    if (stockFilter) stockFilter.value = '';
+    
+    filterTable();
+}
+
+// ========== EXPORT FUNCTIONS ==========
+function exportToExcel() {
+    const table = document.getElementById('stockTable');
+    if (!table) {
+        alert('Hakuna data ya kuexport!');
+        return;
+    }
+    
+    let csv = [];
+    
+    const headers = [];
+    table.querySelectorAll('thead th').forEach(th => {
+        headers.push(th.textContent.trim());
+    });
+    csv.push(headers.join(','));
+    
+    let rowCount = 0;
+    table.querySelectorAll('tbody tr').forEach(row => {
+        if (row.style.display !== 'none') {
+            const rowData = [];
+            row.querySelectorAll('td').forEach(td => {
+                let text = td.textContent.trim().replace(/,/g, ';').replace(/\n/g, ' ');
+                rowData.push(`"${text}"`);
+            });
+            csv.push(rowData.join(','));
+            rowCount++;
+        }
+    });
+    
+    csv.push('');
+    csv.push(`"Ripoti ya Stock Ndogo - {{ report_date|date:'d/m/Y' }}"`);
+    csv.push(`"Jumla ya Bidhaa: ${rowCount}"`);
+    
+    const blob = new Blob(["\ufeff" + csv.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `low_stock_report_{{ report_date|date:'Ymd' }}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    alert(`✓ Ripoti ya Excel imepakuliwa! (Bidhaa: ${rowCount})`);
+}
+
+function printReport() {
+    window.print();
+}
+
+function exportToPDF() {
+    window.print();
+}
+
+function generateOrderList() {
+    let orderList = "========================================\n";
+    orderList += "      ORODHA YA KUAGIZA BIDHAA\n";
+    orderList += "========================================\n";
+    orderList += `Tarehe: {{ report_date|date:'d/m/Y H:i' }}\n`;
+    orderList += "========================================\n\n";
+    
+    {% for product in products %}
+    orderList += "{{ forloop.counter }}. {{ product.name }}\n";
+    orderList += "   SKU: {{ product.sku }}\n";
+    orderList += "   Stock Sasa: {{ product.current_stock }}\n";
+    orderList += "   Reorder Level: {{ product.reorder_level }}\n";
+    orderList += "   Inahitajika: {{ product.needed_quantity }} vitu\n";
+    orderList += "   Bei: TZS {{ product.unit_price|floatformat:0 }} kwa kila kitu\n\n";
+    {% endfor %}
+    
+    orderList += "========================================\n";
+    orderList += `Jumla ya Bidhaa: {{ products|length }}\n`;
+    orderList += "========================================\n";
+    
+    const blob = new Blob([orderList], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `orodha_kuagiza_{{ report_date|date:'Ymd' }}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    alert('✓ Orodha ya kuagiza imepakuliwa!');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    filterTable();
+    
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const stockFilter = document.getElementById('stockFilter');
+    
+    if (searchInput) searchInput.addEventListener('keyup', filterTable);
+    if (categoryFilter) categoryFilter.addEventListener('change', filterTable);
+    if (stockFilter) stockFilter.addEventListener('change', filterTable);
+});
+</script>
+
+<style media="print">
+    @page { size: A4 landscape; margin: 1cm; }
+    .sidebar, .navbar, .footer, .btn, .no-print, .btn-group,
+    .page-actions, #filterSection { display: none !important; }
+    .main-content { margin-left: 0 !important; padding: 0 !important; }
+    .card { border: 1px solid #000 !important; }
+    .card-header { background-color: #ffc107 !important; }
+    .table-dark th { background-color: #343a40 !important; color: white !important; }
+    .table-warning { background-color: #fff3cd !important; }
+    .table-danger { background-color: #f8d7da !important; }
+    .badge { border: 1px solid #000 !important; }
+</style>
+{% endblock %}

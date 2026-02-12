@@ -1,0 +1,214 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Hamisha Stock - Stock Management{% endblock %}
+
+{% block page_title %}Hamisha Stock Kati ya Maghala{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary">
+    <i class="fas fa-arrow-left"></i> Rudi
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Messages -->
+    {% if messages %}
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        HAMISHA STOCK
+                    </h5>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- DEBUG INFO - ONDOA BAADA YA KUFANIKIWA -->
+                    <div class="alert alert-info">
+                        <strong>Debug:</strong> 
+                        Maghala: {{ warehouses|length }} | 
+                        Bidhaa: {{ products|length }}
+                    </div>
+
+                    {% if warehouses and products %}
+                    <form method="post" id="transferForm">
+                        {% csrf_token %}
+                        
+                        <!-- Bidhaa -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-box"></i> Chagua Bidhaa
+                            </label>
+                            <select name="product" id="productSelect" class="form-select" required>
+                                <option value="">-- Chagua Bidhaa --</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}">
+                                    {{ product.name }} ({{ product.sku }}) - TZS {{ product.unit_price|floatformat:0 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Maghala -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-arrow-right"></i> Toka kwenye Ghala
+                                </label>
+                                <select name="from_warehouse" id="fromWarehouse" class="form-select" required>
+                                    <option value="">-- Chagua Ghala --</option>
+                                    {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">
+                                        {{ warehouse.name }} {% if warehouse.code %}({{ warehouse.code }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-arrow-left"></i> Nenda kwenye Ghala
+                                </label>
+                                <select name="to_warehouse" id="toWarehouse" class="form-select" required>
+                                    <option value="">-- Chagua Ghala --</option>
+                                    {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">
+                                        {{ warehouse.name }} {% if warehouse.code %}({{ warehouse.code }}){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Idadi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sort-numeric-up"></i> Idadi ya Kuhamisha
+                            </label>
+                            <input type="number" name="quantity" id="quantity" 
+                                   class="form-control" min="1" required 
+                                   placeholder="Ingiza idadi...">
+                            <div id="stockInfo" class="mt-2"></div>
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Ghairi
+                            </a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-exchange-alt"></i> Hamisha Stock
+                            </button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <div class="text-center py-5">
+                        {% if not warehouses %}
+                        <i class="fas fa-warehouse fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Hakuna Ghala Lililosajiliwa</h5>
+                        <p class="text-muted">Tafadhali ongeza ghala kwanza.</p>
+                        <a href="/admin/warehouse/warehouse/add/" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus"></i> Ongeza Ghala
+                        </a>
+                        {% endif %}
+                        
+                        {% if not products %}
+                        <i class="fas fa-box fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">Hakuna Bidhaa Iliyosajiliwa</h5>
+                        <p class="text-muted">Tafadhali ongeza bidhaa kwanza.</p>
+                        <a href="/admin/warehouse/product/add/" class="btn btn-primary mt-3">
+                            <i class="fas fa-plus"></i> Ongeza Bidhaa
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if warehouses and products %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('productSelect');
+    const fromWarehouse = document.getElementById('fromWarehouse');
+    const toWarehouse = document.getElementById('toWarehouse');
+    const quantityInput = document.getElementById('quantity');
+    const stockInfo = document.getElementById('stockInfo');
+    const form = document.getElementById('transferForm');
+    
+    // Function to check stock
+    function checkStock() {
+        const productId = productSelect.value;
+        const warehouseId = fromWarehouse.value;
+        
+        if (productId && warehouseId) {
+            stockInfo.innerHTML = '<div class="alert alert-info py-2"><i class="fas fa-spinner fa-spin"></i> Inaangalia stock...</div>';
+            
+            fetch(`/api/product-stock/${productId}/?warehouse=${warehouseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stock = data.stock;
+                        let statusClass = 'success';
+                        let statusText = 'Ipo';
+                        
+                        if (stock <= 0) {
+                            statusClass = 'danger';
+                            statusText = 'Hakuna Stock';
+                        } else if (stock <= data.reorder_level) {
+                            statusClass = 'warning';
+                            statusText = 'Stock Ndogo';
+                        }
+                        
+                        stockInfo.innerHTML = `
+                            <div class="alert alert-${statusClass} py-2">
+                                <strong>${data.product_name}</strong><br>
+                                Stock iliyopo: <strong>${stock}</strong> vitu
+                                <span class="badge bg-${statusClass} ms-2">${statusText}</span>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    stockInfo.innerHTML = '<div class="alert alert-danger py-2">✗ Kuna tatizo la kuangalia stock</div>';
+                });
+        } else {
+            stockInfo.innerHTML = '';
+        }
+    }
+    
+    // Add event listeners
+    if (productSelect) productSelect.addEventListener('change', checkStock);
+    if (fromWarehouse) fromWarehouse.addEventListener('change', checkStock);
+    
+    // Form validation
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!productSelect.value || !fromWarehouse.value || !toWarehouse.value || !quantityInput.value) {
+                e.preventDefault();
+                alert('❌ Tafadhali jaza sehemu zote!');
+            } else if (fromWarehouse.value === toWarehouse.value) {
+                e.preventDefault();
+                alert('❌ Maghala yanayotumika lazima yawe tofauti!');
+            } else if (parseInt(quantityInput.value) <= 0) {
+                e.preventDefault();
+                alert('❌ Idadi lazima iwe kubwa kuliko 0!');
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

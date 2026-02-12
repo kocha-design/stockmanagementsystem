@@ -1,0 +1,285 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Ripoti ya Mwezi - {{ month }} - Stock Management{% endblock %}
+
+{% block page_title %}Ripoti ya Mwezi - {{ month }}{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group no-print">
+    <button class="btn btn-sm btn-primary" onclick="printReport()">
+        <i class="fas fa-print"></i> Print
+    </button>
+    <button class="btn btn-sm btn-success" onclick="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Excel
+    </button>
+    <button class="btn btn-sm btn-danger" onclick="exportToPDF()">
+        <i class="fas fa-file-pdf"></i> PDF
+    </button>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Rudi
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- SUMMARY CARDS -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-calendar-alt"></i> Mwezi</h6>
+                    <h5>{{ month }}</h5>
+                    <small>{{ year }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-arrow-down"></i> Maingizo</h6>
+                    <h3>{{ monthly_in_total }}</h3>
+                    <small>vitu</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-arrow-up"></i> Matoleo</h6>
+                    <h3>{{ monthly_out_total }}</h3>
+                    <small>vitu</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-exchange-alt"></i> Manunuzi</h6>
+                    <h3>{{ total_transactions }}</h3>
+                    <small>rekodi</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEBUG INFO - ONDOA BAADA YA KUFANIKIWA -->
+    <div class="alert alert-info">
+        <strong>Debug:</strong> 
+        Maingizo: {{ monthly_in_total }} | 
+        Matoleo: {{ monthly_out_total }} | 
+        Rekodi: {{ total_transactions }}
+        
+        {% if not has_data %}
+        <br><br>
+        <strong>Hakuna shughuli mwezi {{ month_name }}!</strong>
+        <p class="mb-0 mt-2">
+            <a href="/admin/warehouse/stockin/add/" class="btn btn-sm btn-success">
+                <i class="fas fa-plus"></i> Ongeza Maingizo
+            </a>
+            <a href="/admin/warehouse/stockout/add/" class="btn btn-sm btn-danger">
+                <i class="fas fa-minus"></i> Ongeza Matoleo
+            </a>
+        </p>
+        {% endif %}
+    </div>
+
+    <!-- TOP PRODUCTS -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-trophy"></i> Bidhaa Zilizoingizwa Zaidi</h6>
+                </div>
+                <div class="card-body">
+                    {% if top_products %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Maingizo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_products|dictsortreversed:"monthly_in"|slice:":5" %}
+                                {% if product.monthly_in > 0 %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ product.name }}</td>
+                                    <td><code>{{ product.sku }}</code></td>
+                                    <td class="text-success fw-bold">+{{ product.monthly_in }}</td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">Hakuna maingizo mwezi huu</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-header bg-danger text-white">
+                    <h6 class="mb-0"><i class="fas fa-fire"></i> Bidhaa Zilizotolewa Zaidi</h6>
+                </div>
+                <div class="card-body">
+                    {% if top_products %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Matoleo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_products|dictsortreversed:"monthly_out"|slice:":5" %}
+                                {% if product.monthly_out > 0 %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ product.name }}</td>
+                                    <td><code>{{ product.sku }}</code></td>
+                                    <td class="text-danger fw-bold">-{{ product.monthly_out }}</td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted text-center py-3">Hakuna matoleo mwezi huu</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RECENT TRANSACTIONS THIS MONTH -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+            <h5 class="mb-0"><i class="fas fa-history"></i> Shughuli za Mwezi {{ month_name }}</h5>
+            <span class="badge bg-light text-dark">{{ total_transactions }} rekodi</span>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs mb-3" id="monthlyTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="monthly-in-tab" data-bs-toggle="tab" data-bs-target="#monthly-in">
+                        <i class="fas fa-arrow-down text-success"></i> Maingizo ({{ monthly_stockins|length }})
+                    </button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="monthly-out-tab" data-bs-toggle="tab" data-bs-target="#monthly-out">
+                        <i class="fas fa-arrow-up text-danger"></i> Matoleo ({{ monthly_stockouts|length }})
+                    </button>
+                </li>
+            </ul>
+            
+            <div class="tab-content">
+                <div class="tab-pane fade show active" id="monthly-in">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-success table-hover">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Idadi</th>
+                                    <th>Mtoaji</th>
+                                    <th>Namba</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stockin in monthly_stockins %}
+                                <tr>
+                                    <td>{{ stockin.date_received|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ stockin.product.name }}</td>
+                                    <td><code>{{ stockin.product.sku }}</code></td>
+                                    <td class="fw-bold text-success">+{{ stockin.quantity }}</td>
+                                    <td>{{ stockin.supplier|default:"-" }}</td>
+                                    <td><code>{{ stockin.reference_no|default:"-" }}</code></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-arrow-down fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">Hakuna maingizo mwezi {{ month_name }}</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="tab-pane fade" id="monthly-out">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-danger table-hover">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Idadi</th>
+                                    <th>Mnunuzi</th>
+                                    <th>Namba</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stockout in monthly_stockouts %}
+                                <tr>
+                                    <td>{{ stockout.date_issued|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ stockout.product.name }}</td>
+                                    <td><code>{{ stockout.product.sku }}</code></td>
+                                    <td class="fw-bold text-danger">-{{ stockout.quantity }}</td>
+                                    <td>{{ stockout.customer|default:"-" }}</td>
+                                    <td><code>{{ stockout.reference_no|default:"-" }}</code></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">
+                                        <i class="fas fa-arrow-up fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">Hakuna matoleo mwezi {{ month_name }}</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/reports.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Monthly report loaded');
+    console.log('Month:', '{{ month }}');
+    console.log('StockIn:', {{ monthly_in_total }}, 'StockOut:', {{ monthly_out_total }});
+});
+</script>
+
+<style media="print">
+    @page { size: A4 portrait; margin: 1cm; }
+    .sidebar, .navbar, .footer, .btn, .no-print, .btn-group, .nav-tabs { 
+        display: none !important; 
+    }
+    .tab-pane { display: block !important; }
+    .card { border: 1px solid #000 !important; }
+    .table-success th { background-color: #28a745 !important; color: white !important; }
+    .table-danger th { background-color: #dc3545 !important; color: white !important; }
+</style>
+{% endblock %}

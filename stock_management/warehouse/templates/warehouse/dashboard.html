@@ -4,6 +4,28 @@
 
 {% block page_title %}Dashboard ya Stock{% endblock %}
 
+{% block extra_css %}
+<style>
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.today-badge {
+    font-size: 0.8rem;
+    padding: 3px 8px;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <!-- Stats Cards -->
@@ -15,8 +37,13 @@
                         <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                             Bidhaa Zote
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        <div class="h5 mb-0 font-weight-bold text-gray-800 stat-number">
                             {{ total_products }}
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'product_list' %}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> Angalia Zote
+                            </a>
                         </div>
                     </div>
                     <div class="col-auto">
@@ -33,14 +60,46 @@
                 <div class="row no-gutters align-items-center">
                     <div class="col mr-2">
                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                            Kategoria
+                            Maingizo ya Leo
+                            <span class="badge bg-info today-badge">{{ today }}</span>
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            {{ total_categories }}
+                        <div class="h5 mb-0 font-weight-bold text-gray-800 stat-number">
+                            {{ today_stockins }}
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'add_stockin' %}" class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-plus"></i> Ongeza
+                            </a>
                         </div>
                     </div>
                     <div class="col-auto">
-                        <i class="fas fa-tags fa-2x text-gray-300"></i>
+                        <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-danger shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                            Matoleo ya Leo
+                            <span class="badge bg-info today-badge">{{ today }}</span>
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800 stat-number">
+                            {{ today_stockouts }}
+                        </div>
+                        <div class="mt-2">
+                            <a href="{% url 'add_stockout' %}" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-minus"></i> Toa
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
                     </div>
                 </div>
             </div>
@@ -55,8 +114,13 @@
                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                             Bidhaa Zenye Stock Ndogo
                         </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                        <div class="h5 mb-0 font-weight-bold text-gray-800 stat-number">
                             {{ low_stock_products|length }}
+                        </div>
+                        <div class="mt-2">
+                            <a href="#low-stock-section" class="btn btn-sm btn-outline-warning">
+                                <i class="fas fa-exclamation-triangle"></i> Angalia
+                            </a>
                         </div>
                     </div>
                     <div class="col-auto">
@@ -66,21 +130,105 @@
             </div>
         </div>
     </div>
+</div>
 
-    <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
+<!-- Row 2: Charts and Recent Activity -->
+<div class="row">
+    <!-- Weekly Activity Chart -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-line me-2"></i>Shughuli za Wiki Iliyopita
+                </h6>
+                <div class="dropdown no-arrow">
+                    <button class="btn btn-sm btn-outline-primary dropdown-toggle" type="button" 
+                            data-bs-toggle="dropdown">
+                        <i class="fas fa-filter"></i> Chagua Kipindi
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end shadow">
+                        <a class="dropdown-item" href="#">Wiki 1</a>
+                        <a class="dropdown-item" href="#">Wiki 2</a>
+                        <a class="dropdown-item" href="#">Mwezi 1</a>
+                    </div>
+                </div>
+            </div>
             <div class="card-body">
-                <div class="row no-gutters align-items-center">
-                    <div class="col mr-2">
-                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                            Maingizo ya Leo
-                        </div>
-                        <div class="h5 mb-0 font-weight-bold text-gray-800">
-                            0
+                <div class="chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-tachometer-alt me-2"></i>Takwimu za Haraka
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-4">
+                        <div class="card border-left-info shadow-sm h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                    Kategoria
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                    {{ total_categories }}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-auto">
-                        <i class="fas fa-arrow-down fa-2x text-gray-300"></i>
+                    <div class="col-6 mb-4">
+                        <div class="card border-left-secondary shadow-sm h-100 py-2">
+                            <div class="card-body">
+                                <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">
+                                    Maghala
+                                </div>
+                                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                                    {{ total_warehouses }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <h6 class="font-weight-bold text-dark mb-3">
+                        <i class="fas fa-history me-2"></i>Vitendo vya Haraka
+                    </h6>
+                    <div class="list-group">
+                        <a href="{% url 'add_stockin' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-success">
+                                    <i class="fas fa-plus-circle me-2"></i>Ingiza Stock
+                                </h6>
+                                <small>Rekodi mpya</small>
+                            </div>
+                            <p class="mb-1 small text-muted">Ongeza stock ya bidhaa</p>
+                        </a>
+                        <a href="{% url 'add_stockout' %}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-danger">
+                                    <i class="fas fa-minus-circle me-2"></i>Toa Stock
+                                </h6>
+                                <small>Rekodi mpya</small>
+                            </div>
+                            <p class="mb-1 small text-muted">Toa stock ya bidhaa</p>
+                        </a>
+                        <a href="/admin/warehouse/product/add/" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1 text-primary">
+                                    <i class="fas fa-box me-2"></i>Ongeza Bidhaa
+                                </h6>
+                                <small>Admin Panel</small>
+                            </div>
+                            <p class="mb-1 small text-muted">Ongeza bidhaa mpya</p>
+                        </a>
                     </div>
                 </div>
             </div>
@@ -88,8 +236,8 @@
     </div>
 </div>
 
-<!-- Row 2: Recent Activity and Low Stock -->
-<div class="row">
+<!-- Row 3: Low Stock and Recent Transactions -->
+<div class="row" id="low-stock-section">
     <!-- Low Stock Products -->
     <div class="col-xl-6 col-lg-6">
         <div class="card shadow mb-4">
@@ -97,38 +245,58 @@
                 <h6 class="m-0 font-weight-bold text-warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>Bidhaa Zenye Stock Ndogo
                 </h6>
+                <span class="badge bg-warning">{{ low_stock_products|length }}</span>
             </div>
             <div class="card-body">
                 {% if low_stock_products %}
                 <div class="table-responsive">
-                    <table class="table table-sm">
+                    <table class="table table-sm table-hover">
                         <thead>
                             <tr>
                                 <th>Bidhaa</th>
                                 <th>SKU</th>
                                 <th>Stock</th>
-                                <th>Kiwango cha Kuagiza</th>
+                                <th>Kiwango</th>
+                                <th>Hali</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for product in low_stock_products %}
                             <tr>
-                                <td>{{ product.name }}</td>
-                                <td>{{ product.sku }}</td>
                                 <td>
-                                    <span class="badge bg-warning text-dark">
+                                    <strong>{{ product.name|truncatechars:20 }}</strong>
+                                    {% if product.category %}
+                                    <br><small class="text-muted">{{ product.category.name }}</small>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ product.sku }}</code></td>
+                                <td>
+                                    <span class="badge {% if product.stock_status == 'out' %}bg-danger{% else %}bg-warning{% endif %}">
                                         {{ product.current_stock }}
                                     </span>
                                 </td>
                                 <td>{{ product.reorder_level }}</td>
+                                <td>
+                                    {% if product.stock_status == 'out' %}
+                                    <span class="badge bg-danger">Hakuna Stock</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">Stock Ndogo</span>
+                                    {% endif %}
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                <div class="text-center mt-2">
+                    <a href="{% url 'product_list' %}" class="btn btn-sm btn-warning">
+                        <i class="fas fa-list"></i> Angalia Bidhaa Zote
+                    </a>
+                </div>
                 {% else %}
                 <div class="text-center py-4">
                     <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h5 class="text-success">Hakuna Tahadhari!</h5>
                     <p class="text-muted">Hakuna bidhaa zenye stock ndogo kwa sasa.</p>
                 </div>
                 {% endif %}
@@ -143,96 +311,255 @@
                 <h6 class="m-0 font-weight-bold text-primary">
                     <i class="fas fa-history me-2"></i>Shughuli za Hivi Karibuni
                 </h6>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-outline-primary active" 
+                            onclick="showTab('stockin-tab')">Maingizo</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                            onclick="showTab('stockout-tab')">Matoleo</button>
+                </div>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <h6 class="small font-weight-bold text-success">
-                            <i class="fas fa-arrow-down me-1"></i> Maingizo Mapya
-                        </h6>
-                        {% if recent_stockins %}
-                        <div class="list-group small">
-                            {% for stockin in recent_stockins %}
-                            <div class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <strong>{{ stockin.product.name|truncatechars:20 }}</strong>
-                                    <small class="text-success">{{ stockin.quantity }} vitu</small>
+                <div id="stockin-tab" class="transaction-tab">
+                    {% if recent_stockins %}
+                    <div class="list-group list-group-flush">
+                        {% for stockin in recent_stockins %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-arrow-down text-success me-2"></i>
+                                        {{ stockin.product.name|truncatechars:25 }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ stockin.supplier|default:"-" }}
+                                    </small>
                                 </div>
-                                <small class="text-muted">
-                                    {{ stockin.date_received|date:"d/m/Y H:i" }}
-                                </small>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% else %}
-                        <p class="text-muted small">Hakuna maingizo ya hivi karibuni</p>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="col-md-6">
-                        <h6 class="small font-weight-bold text-danger">
-                            <i class="fas fa-arrow-up me-1"></i> Matoleo Mapya
-                        </h6>
-                        {% if recent_stockouts %}
-                        <div class="list-group small">
-                            {% for stockout in recent_stockouts %}
-                            <div class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <strong>{{ stockout.product.name|truncatechars:20 }}</strong>
-                                    <small class="text-danger">{{ stockout.quantity }} vitu</small>
+                                <div class="text-end">
+                                    <span class="badge bg-success">+{{ stockin.quantity }}</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ stockin.date_received|date:"H:i" }}
+                                    </small>
                                 </div>
-                                <small class="text-muted">
-                                    {{ stockout.date_issued|date:"d/m/Y H:i" }}
-                                </small>
                             </div>
-                            {% endfor %}
                         </div>
-                        {% else %}
-                        <p class="text-muted small">Hakuna matoleo ya hivi karibuni</p>
-                        {% endif %}
+                        {% endfor %}
                     </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Hakuna maingizo ya hivi karibuni</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div id="stockout-tab" class="transaction-tab" style="display: none;">
+                    {% if recent_stockouts %}
+                    <div class="list-group list-group-flush">
+                        {% for stockout in recent_stockouts %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <div>
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-arrow-up text-danger me-2"></i>
+                                        {{ stockout.product.name|truncatechars:25 }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ stockout.customer|default:"-" }}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-danger">-{{ stockout.quantity }}</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ stockout.date_issued|date:"H:i" }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-outbox fa-2x text-muted mb-3"></i>
+                        <p class="text-muted">Hakuna matoleo ya hivi karibuni</p>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'transaction_list' %}" class="btn btn-sm btn-primary">
+                        <i class="fas fa-list"></i> Angalia Historia Yote
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Quick Actions -->
+<!-- Report Cards -->
+<!-- Report Cards -->
 <div class="row">
     <div class="col-12">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-primary">
-                    <i class="fas fa-bolt me-2"></i>Vitendo vya Haraka
+                    <i class="fas fa-file-alt me-2"></i>Ripoti
                 </h6>
             </div>
             <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'add_stockin' %}" class="btn btn-success btn-lg w-100 py-3">
-                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
-                            Ingiza Stock
-                        </a>
+                <div class="row">
+                    <!-- Ripoti ya Stock -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-left-info h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-pie fa-3x text-info mb-3"></i>
+                                <h5>Ripoti ya Stock</h5>
+                                <p class="text-muted small">Muonekano wa stock ya bidhaa zote</p>
+                                <a href="{% url 'stock_report' %}" class="btn btn-info btn-sm mt-2">
+                                    <i class="fas fa-download"></i> Fungua Ripoti
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'add_stockout' %}" class="btn btn-danger btn-lg w-100 py-3">
-                            <i class="fas fa-minus-circle fa-2x mb-2"></i><br>
-                            Toa Stock
-                        </a>
+                    
+                    <!-- Ripoti ya Manunuzi -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-left-success h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exchange-alt fa-3x text-success mb-3"></i>
+                                <h5>Ripoti ya Manunuzi</h5>
+                                <p class="text-muted small">Historia ya maingizo na matoleo</p>
+                                <a href="{% url 'transaction_report' %}" class="btn btn-success btn-sm mt-2">
+                                    <i class="fas fa-download"></i> Fungua Ripoti
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="{% url 'product_list' %}" class="btn btn-info btn-lg w-100 py-3">
-                            <i class="fas fa-box fa-2x mb-2"></i><br>
-                            Orodha ya Bidhaa
-                        </a>
+                    
+                    <!-- Ripoti ya Stock Ndogo -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-left-warning h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                                <h5>Ripoti ya Stock Ndogo</h5>
+                                <p class="text-muted small">Bidhaa zinazohitaji kuagizwa upya</p>
+                                <a href="{% url 'low_stock_report' %}" class="btn btn-warning btn-sm mt-2">
+                                    <i class="fas fa-download"></i> Fungua Ripoti
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-md-3 mb-3">
-                        <a href="/admin/warehouse/product/add/" class="btn btn-primary btn-lg w-100 py-3">
-                            <i class="fas fa-plus fa-2x mb-2"></i><br>
-                    Ongeza Bidhaa Mpya
-                </a>
+                    
+                    <!-- Ripoti ya Mwezi -->
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card border-left-secondary h-100">
+                            <div class="card-body text-center">
+                                <i class="fas fa-calendar-alt fa-3x text-secondary mb-3"></i>
+                                <h5>Ripoti ya Mwezi</h5>
+                                <p class="text-muted small">Taarifa ya mwezi wa sasa</p>
+                                <a href="{% url 'monthly_report' %}" class="btn btn-secondary btn-sm mt-2">
+                                    <i class="fas fa-download"></i> Fungua Ripoti
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Tab switching for recent transactions
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.transaction-tab').forEach(tab => {
+        tab.style.display = 'none';
+    });
+    
+    // Show selected tab
+    document.getElementById(tabName).style.display = 'block';
+    
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+// Weekly Chart
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('weeklyChart').getContext('2d');
+    
+    // Data from Django template
+    const weeklyData = {{ weekly_data|safe }};
+    const labels = weeklyData.map(item => item.date);
+    const stockinData = weeklyData.map(item => item.stockin);
+    const stockoutData = weeklyData.map(item => item.stockout);
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Maingizo',
+                    data: stockinData,
+                    backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                    borderColor: 'rgba(40, 167, 69, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: 'Matoleo',
+                    data: stockoutData,
+                    backgroundColor: 'rgba(220, 53, 69, 0.7)',
+                    borderColor: 'rgba(220, 53, 69, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Idadi ya Bidhaa'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Siku za Wiki'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Report generation functions (placeholder)
+    window.generateStockReport = function() {
+        alert('Ripoti ya stock itapakuliwa...');
+        // Implement actual report generation here
+    };
+    
+    window.generateTransactionReport = function() {
+        alert('Ripoti ya manunuzi itapakuliwa...');
+    };
+    
+    window.generateLowStockReport = function() {
+        alert('Ripoti ya stock ndogo itapakuliwa...');
+    };
+    
+    window.generateMonthlyReport = function() {
+        alert('Ripoti ya mwezi itapakuliwa...');
+    };
+});
+</script>
 {% endblock %}

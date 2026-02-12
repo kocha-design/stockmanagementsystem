@@ -1,0 +1,152 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Hamisha Stock - Stock Management System{% endblock %}
+
+{% block page_title %}Hamisha Stock Kati ya Maghala{% endblock %}
+
+{% block page_actions %}
+<a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary">
+    <i class="fas fa-arrow-left"></i> Rudi
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        HAMISHA STOCK
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <!-- Bidhaa -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-box"></i> Chagua Bidhaa
+                            </label>
+                            <select name="product" id="productSelect" class="form-select" required>
+                                <option value="">-- Chagua Bidhaa --</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}">
+                                    {{ product.name }} ({{ product.sku }}) - TZS {{ product.unit_price|floatformat:0 }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Maghala -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-arrow-right"></i> Toka kwenye Ghala
+                                </label>
+                                <select name="from_warehouse" id="fromWarehouse" class="form-select" required>
+                                    <option value="">-- Chagua Ghala --</option>
+                                    {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">
+                                        {{ warehouse.name }} ({{ warehouse.code }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-arrow-left"></i> Nenda kwenye Ghala
+                                </label>
+                                <select name="to_warehouse" id="toWarehouse" class="form-select" required>
+                                    <option value="">-- Chagua Ghala --</option>
+                                    {% for warehouse in warehouses %}
+                                    <option value="{{ warehouse.id }}">
+                                        {{ warehouse.name }} ({{ warehouse.code }})
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Idadi -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-sort-numeric-up"></i> Idadi ya Kuhamisha
+                            </label>
+                            <input type="number" name="quantity" id="quantity" 
+                                   class="form-control" min="1" required 
+                                   placeholder="Ingiza idadi...">
+                            <div id="stockInfo" class="mt-2"></div>
+                        </div>
+                        
+                        <!-- Buttons -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'dashboard' %}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Ghairi
+                            </a>
+                            <button type="submit" class="btn btn-info">
+                                <i class="fas fa-exchange-alt"></i> Hamisha Stock
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('productSelect');
+    const fromWarehouse = document.getElementById('fromWarehouse');
+    const toWarehouse = document.getElementById('toWarehouse');
+    const quantityInput = document.getElementById('quantity');
+    const stockInfo = document.getElementById('stockInfo');
+    
+    function checkStock() {
+        const productId = productSelect.value;
+        const warehouseId = fromWarehouse.value;
+        
+        if (productId && warehouseId) {
+            stockInfo.innerHTML = '<div class="alert alert-info py-2"><i class="fas fa-spinner fa-spin"></i> Inaangalia stock...</div>';
+            
+            fetch(`/api/product-stock/${productId}/?warehouse=${warehouseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stock = data.stock;
+                        let statusClass = stock <= 0 ? 'danger' : (stock <= data.reorder_level ? 'warning' : 'success');
+                        let statusText = stock <= 0 ? 'Hakuna Stock' : (stock <= data.reorder_level ? 'Stock Ndogo' : 'Ipo');
+                        
+                        stockInfo.innerHTML = `
+                            <div class="alert alert-${statusClass} py-2">
+                                <strong>${data.product_name}</strong><br>
+                                Stock iliyopo: <strong>${stock}</strong> vitu
+                                <span class="badge bg-${statusClass} ms-2">${statusText}</span>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(() => {
+                    stockInfo.innerHTML = '<div class="alert alert-danger py-2">✗ Kuna tatizo la kuangalia stock</div>';
+                });
+        }
+    }
+    
+    productSelect.addEventListener('change', checkStock);
+    fromWarehouse.addEventListener('change', checkStock);
+    
+    document.getElementById('transferForm').addEventListener('submit', function(e) {
+        if (!productSelect.value || !fromWarehouse.value || !toWarehouse.value || !quantityInput.value) {
+            e.preventDefault();
+            alert('❌ Tafadhali jaza sehemu zote!');
+        } else if (fromWarehouse.value === toWarehouse.value) {
+            e.preventDefault();
+            alert('❌ Maghala yanayotumika lazima yawe tofauti!');
+        }
+    });
+});
+</script>
+{% endblock %}

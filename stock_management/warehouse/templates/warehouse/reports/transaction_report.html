@@ -1,0 +1,314 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Ripoti ya Manunuzi - Stock Management{% endblock %}
+
+{% block page_title %}Ripoti ya Manunuzi{% endblock %}
+
+{% block page_actions %}
+<div class="btn-group no-print">
+    <button class="btn btn-sm btn-primary" onclick="printReport()">
+        <i class="fas fa-print"></i> Print
+    </button>
+    <button class="btn btn-sm btn-success" onclick="exportToExcel()">
+        <i class="fas fa-file-excel"></i> Excel
+    </button>
+    <button class="btn btn-sm btn-danger" onclick="exportToPDF()">
+        <i class="fas fa-file-pdf"></i> PDF
+    </button>
+    <button class="btn btn-sm btn-info" onclick="copyToClipboard()">
+        <i class="fas fa-copy"></i> Nakili
+    </button>
+    <button class="btn btn-sm btn-success" onclick="shareWhatsApp()">
+        <i class="fab fa-whatsapp"></i> WhatsApp
+    </button>
+    <a href="{% url 'dashboard' %}" class="btn btn-sm btn-secondary">
+        <i class="fas fa-arrow-left"></i> Rudi
+    </a>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- SUMMARY CARDS -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-exchange-alt"></i> Jumla ya Manunuzi</h6>
+                    <h3>{{ total_transactions }}</h3>
+                    <small>Rekodi zote</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-arrow-down"></i> Maingizo</h6>
+                    <h3>{{ stockins|length }}</h3>
+                    <small>Rekodi</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-arrow-up"></i> Matoleo</h6>
+                    <h3>{{ stockouts|length }}</h3>
+                    <small>Rekodi</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white shadow">
+                <div class="card-body">
+                    <h6><i class="fas fa-calendar"></i> Tarehe</h6>
+                    <h6>{{ report_date|date:"d/m/Y" }}</h6>
+                    <small>{{ report_date|date:"H:i" }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DEBUG INFO - ONDOA BAADA YA KUFANIKIWA -->
+    <div class="alert alert-info">
+        <strong>Debug:</strong> 
+        Maingizo: {{ stockins|length }} | 
+        Matoleo: {{ stockouts|length }} | 
+        Jumla: {{ total_transactions }}
+        
+        {% if not has_data %}
+        <br><br>
+        <strong>Hakuna data ya manunuzi!</strong> Tafadhali:
+        <ul class="mb-0 mt-2">
+            <li>Nenda <a href="/admin/warehouse/stockin/" target="_blank">Admin Panel → Stock In</a> na uongeze maingizo</li>
+            <li>Nenda <a href="/admin/warehouse/stockout/" target="_blank">Admin Panel → Stock Out</a> na uongeze matoleo</li>
+            <li>Kisha <strong>refresh</strong> ukurasa huu</li>
+        </ul>
+        {% endif %}
+    </div>
+
+    <!-- TRANSACTIONS TABS -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white d-flex justify-content-between">
+            <h5 class="mb-0"><i class="fas fa-history"></i> Historia ya Manunuzi</h5>
+            <span class="badge bg-light text-dark">{{ total_transactions }} rekodi</span>
+        </div>
+        <div class="card-body">
+            
+            <!-- Tabs Navigation -->
+            <ul class="nav nav-tabs mb-3" id="transactionTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="all-tab" data-bs-toggle="tab" data-bs-target="#all" type="button">
+                        <i class="fas fa-list"></i> Zote ({{ total_transactions }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="stockin-tab" data-bs-toggle="tab" data-bs-target="#stockin" type="button">
+                        <i class="fas fa-arrow-down text-success"></i> Maingizo ({{ stockins|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="stockout-tab" data-bs-toggle="tab" data-bs-target="#stockout" type="button">
+                        <i class="fas fa-arrow-up text-danger"></i> Matoleo ({{ stockouts|length }})
+                    </button>
+                </li>
+            </ul>
+            
+            <!-- Tabs Content -->
+            <div class="tab-content" id="transactionTabContent">
+                
+                <!-- TAB 1: ALL TRANSACTIONS -->
+                <div class="tab-pane fade show active" id="all" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="stockTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Aina</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Idadi</th>
+                                    <th>Mhusika</th>
+                                    <th>Ghala</th>
+                                    <th>Namba</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stockin in stockins %}
+                                <tr class="table-success">
+                                    <td>{{ stockin.date_received|date:"d/m/Y H:i" }}</td>
+                                    <td><span class="badge bg-success"><i class="fas fa-arrow-down"></i> Ingizo</span></td>
+                                    <td>{{ stockin.product.name }}</td>
+                                    <td><code>{{ stockin.product.sku }}</code></td>
+                                    <td class="text-success fw-bold">+{{ stockin.quantity }}</td>
+                                    <td><i class="fas fa-truck"></i> {{ stockin.supplier|default:"-" }}</td>
+                                    <td>{{ stockin.warehouse.name|default:"-" }}</td>
+                                    <td><code>{{ stockin.reference_no|default:"-" }}</code></td>
+                                </tr>
+                                {% endfor %}
+                                
+                                {% for stockout in stockouts %}
+                                <tr class="table-danger">
+                                    <td>{{ stockout.date_issued|date:"d/m/Y H:i" }}</td>
+                                    <td><span class="badge bg-danger"><i class="fas fa-arrow-up"></i> Mtoleo</span></td>
+                                    <td>{{ stockout.product.name }}</td>
+                                    <td><code>{{ stockout.product.sku }}</code></td>
+                                    <td class="text-danger fw-bold">-{{ stockout.quantity }}</td>
+                                    <td><i class="fas fa-user"></i> {{ stockout.customer|default:"-" }}</td>
+                                    <td>{{ stockout.warehouse.name|default:"-" }}</td>
+                                    <td><code>{{ stockout.reference_no|default:"-" }}</code></td>
+                                </tr>
+                                {% empty %}
+                                {% if not stockins and not stockouts %}
+                                <tr>
+                                    <td colspan="8" class="text-center py-5">
+                                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                                        <h4 class="text-muted">Hakuna Historia ya Manunuzi</h4>
+                                        <p class="text-muted">Hakuna maingizo wala matoleo ya stock bado.</p>
+                                        <div class="mt-3">
+                                            <a href="/admin/warehouse/stockin/add/" class="btn btn-success me-2">
+                                                <i class="fas fa-plus"></i> Ongeza Maingizo
+                                            </a>
+                                            <a href="/admin/warehouse/stockout/add/" class="btn btn-danger">
+                                                <i class="fas fa-minus"></i> Ongeza Matoleo
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- TAB 2: STOCK IN ONLY -->
+                <div class="tab-pane fade" id="stockin" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-success table-hover">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Idadi</th>
+                                    <th>Mtoaji</th>
+                                    <th>Ghala</th>
+                                    <th>Namba</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stockin in stockins %}
+                                <tr>
+                                    <td>{{ stockin.date_received|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ stockin.product.name }}</td>
+                                    <td><code>{{ stockin.product.sku }}</code></td>
+                                    <td class="fw-bold text-success">+{{ stockin.quantity }}</td>
+                                    <td>{{ stockin.supplier|default:"-" }}</td>
+                                    <td>{{ stockin.warehouse.name|default:"-" }}</td>
+                                    <td><code>{{ stockin.reference_no|default:"-" }}</code></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-arrow-down fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">Hakuna maingizo ya stock</p>
+                                        <a href="/admin/warehouse/stockin/add/" class="btn btn-sm btn-success">
+                                            <i class="fas fa-plus"></i> Ongeza Maingizo
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- TAB 3: STOCK OUT ONLY -->
+                <div class="tab-pane fade" id="stockout" role="tabpanel">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-danger table-hover">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th>Tarehe</th>
+                                    <th>Bidhaa</th>
+                                    <th>SKU</th>
+                                    <th>Idadi</th>
+                                    <th>Mnunuzi</th>
+                                    <th>Ghala</th>
+                                    <th>Namba</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stockout in stockouts %}
+                                <tr>
+                                    <td>{{ stockout.date_issued|date:"d/m/Y H:i" }}</td>
+                                    <td>{{ stockout.product.name }}</td>
+                                    <td><code>{{ stockout.product.sku }}</code></td>
+                                    <td class="fw-bold text-danger">-{{ stockout.quantity }}</td>
+                                    <td>{{ stockout.customer|default:"-" }}</td>
+                                    <td>{{ stockout.warehouse.name|default:"-" }}</td>
+                                    <td><code>{{ stockout.reference_no|default:"-" }}</code></td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4">
+                                        <i class="fas fa-arrow-up fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">Hakuna matoleo ya stock</p>
+                                        <a href="/admin/warehouse/stockout/add/" class="btn btn-sm btn-danger">
+                                            <i class="fas fa-plus"></i> Ongeza Matoleo
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Footer Summary -->
+            {% if has_data %}
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="alert alert-success mb-0">
+                        <strong><i class="fas fa-arrow-down"></i> Jumla ya Maingizo:</strong> 
+                        {{ stockins_total }} vitu
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="alert alert-danger mb-0">
+                        <strong><i class="fas fa-arrow-up"></i> Jumla ya Matoleo:</strong> 
+                        {{ stockouts_total }} vitu
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% load static %}
+<script src="{% static 'js/reports.js' %}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Transaction report loaded');
+    console.log('StockIn:', {{ stockins|length }}, 'StockOut:', {{ stockouts|length }});
+});
+</script>
+
+<style media="print">
+    @page { size: A4 landscape; margin: 1cm; }
+    .sidebar, .navbar, .footer, .btn, .no-print, .btn-group, .nav-tabs { 
+        display: none !important; 
+    }
+    .tab-pane { display: block !important; }
+    .card { border: 1px solid #000 !important; }
+    .table th { background-color: #333 !important; color: white !important; }
+    .badge.bg-success { background-color: #d4edda !important; }
+    .badge.bg-danger { background-color: #f8d7da !important; }
+</style>
+{% endblock %}

@@ -179,6 +179,29 @@
         </div>
     </div>
 
+    <!-- Maghala Menu -->
+<li class="nav-item">
+    <a class="nav-link" href="#" data-bs-toggle="collapse" data-bs-target="#warehouseMenu">
+        <i class="fas fa-warehouse me-2"></i> Maghala
+        <i class="fas fa-chevron-down float-end"></i>
+    </a>
+    <div class="collapse" id="warehouseMenu">
+        <ul class="nav flex-column ms-3">
+            {% for warehouse in request.user.warehouse_set.all %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'warehouse_stock' warehouse.id %}">
+                    <i class="fas fa-box"></i> {{ warehouse.name }}
+                </a>
+            </li>
+            {% endfor %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'transfer_stock' %}">
+                    <i class="fas fa-exchange-alt"></i> Hamisha Stock
+                </a>
+            </li>
+        </ul>
+    </div>
+</li>
     <!-- Footer -->
     <footer class="footer mt-auto py-3 bg-light border-top">
         <div class="container text-center">
